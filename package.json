@@ -186,6 +186,7 @@
   "author": "",
   "license": "ISC",
   "devDependencies": {
+    "@types/bcrypt": "^5.0.2",
     "@types/express": "^5.0.1",
     "@types/node": "^22.13.14",
     "typescript": "^5.8.2"
