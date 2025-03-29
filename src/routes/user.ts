@@ -1,42 +1,52 @@
-import express, { Request, Response } from "express";
+import { Router, Request, Response, NextFunction, RequestHandler } from "express";
 import { StatusCodes } from "http-status-codes";
 import { DatabaseHelper } from "../helpers/database";
 
-const router = express.Router(); 
+const router = Router();
 
-router.post("/users", async (req: Request, res: Response) => {
+interface RegisterRequest {
+    username: string;
+    email: string;
+    password: string;
+}
+
+
+const registerHandler: RequestHandler = async (
+    req: Request<{}, {}, RegisterRequest>,
+    res: Response,
+    next: NextFunction
+) => {
     try {
         const { username, email, password } = req.body;
-
+        
         if (!username || !email || !password) {
-            return res.status(StatusCodes.BAD_REQUEST).json({
-                error: "Please provide all the required parameters...",
+            res.status(StatusCodes.BAD_REQUEST).json({ 
+                error: "Please provide all the required parameters..." 
             });
+            return;
         }
-
-        // Check if user exists
+        
         const existingUser = await DatabaseHelper.findByEmail(email);
-
+        
         if (existingUser) {
-            return res.status(StatusCodes.BAD_REQUEST).json({
-                error: "This email has already been registered...",
+            res.status(StatusCodes.BAD_REQUEST).json({ 
+                error: "This email has already been registered..." 
             });
+            return;
         }
-
-        // Create new user
+        
         const newUser = await DatabaseHelper.createUser({
             username,
             email,
-            password,
+            password
         });
-
-        return res.status(StatusCodes.CREATED).json(newUser);
+        
+        res.status(StatusCodes.CREATED).json(newUser);
     } catch (error) {
-        console.error("User creation error:", error);
-        return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
-            error: "Internal server error",
-        });
+        next(error);
     }
-});
+};
 
-export default router; // ✅ Ensure you're exporting `router`
+router.post("/register", registerHandler);
+
+export default router;
