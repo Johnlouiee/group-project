@@ -1,100 +1,134 @@
-import { Router, RequestHandler } from "express";
-import { createUser, findByEmail, deleteUser, listUsers} from "../helpers/userRepository"; // Added deleteUser import
+import { Router, Request, Response } from "express";
+import { createUser, findByEmail, deleteUser, listUsers } from "../helpers/userRepository";
 
 const router = Router();
 
-interface RegisterRequest {
-    username: string;
-    email: string;
-    password: string;
-}
-
-// Create User
-const registerHandler: RequestHandler = async (req, res): Promise<void> => {
+// Register User
+router.post("/register", async (req: Request, res: Response) => {
     try {
-        const { username, email, password } = req.body as RegisterRequest;
-
-        if (!username || !email || !password) {
-            res.status(400).json({ message: "All fields are required" });
-            return;
+        // Check if body is empty
+        if (!req.body || Object.keys(req.body).length === 0) {
+            return res.status(400).json({
+                message: "Request body is empty"
+            });
         }
 
+        const { title, firstName, lastName, role, email, password, confirmPassword } = req.body;
+
+        // Validate input
+        if (!title || !firstName || !lastName || !role || !email || !password || !confirmPassword) {
+            return res.status(400).json({
+                message: "All fields are required"
+            });
+        }
+
+        // Validate password confirmation
+        if (password !== confirmPassword) {
+            return res.status(400).json({
+                message: "Passwords do not match"
+            });
+        }
+
+        // Check if user exists
         const existingUser = await findByEmail(email);
         if (existingUser) {
-            res.status(400).json({ message: "User with this email already exists" });
-            return;
+            return res.status(400).json({
+                message: "User with this email already exists"
+            });
         }
 
-        const user = await createUser(username, email, password);
-        const { password: _, ...userWithoutPassword } = user;
+        // Create user
+        await createUser(
+            title,
+            firstName,
+            lastName,
+            role,
+            email,
+            password
+        );
         
-        res.status(201).json({ 
-            message: "User registered successfully", 
-            user: userWithoutPassword 
+        return res.status(201).json({
+            message: "User created"
         });
     } catch (error) {
         console.error("Registration error:", error);
-        res.status(500).json({ message: "Error registering user" });
+        return res.status(500).json({
+            message: "Error creating user"
+        });
     }
-};
+});
 
-// Find User by Email
-const getUserHandler: RequestHandler = async (req, res): Promise<void> => {
+// Get User by Email
+router.get("/user/:email", async (req: Request, res: Response) => {
     try {
         const { email } = req.params;
         const user = await findByEmail(email);
         
         if (!user) {
-            res.status(404).json({ message: "User not found" });
-            return;
+            return res.status(404).json({
+                success: false,
+                message: "User not found",
+                data: null
+            });
         }
 
         const { password: _, ...userWithoutPassword } = user;
-        res.json(userWithoutPassword);
+        return res.status(200).json({
+            success: true,
+            message: "User retrieved successfully",
+            data: userWithoutPassword
+        });
     } catch (error) {
         console.error("Error retrieving user:", error);
-        res.status(500).json({ message: "Error retrieving user" });
+        return res.status(500).json({
+            success: false,
+            message: "Error retrieving user",
+            data: null
+        });
     }
-};
+});
 
-// Delete User by Email
-const deleteUserHandler: RequestHandler = async (req, res): Promise<void> => {
+
+// Delete User
+router.delete("/user/:email", async (req: Request, res: Response) => {
     try {
         const { email } = req.params;
         
         const user = await findByEmail(email);
         if (!user) {
-            res.status(404).json({ message: "User not found" });
-            return;
+            return res.status(404).json({
+                message: "User not found"
+            });
         }
 
         await deleteUser(email);
-        res.status(200).json({ 
-            message: "User deleted successfully",
-            email: email 
+        return res.status(200).json({
+            message: "User deleted"
         });
     } catch (error) {
         console.error("Error deleting user:", error);
-        res.status(500).json({ message: "Error deleting user" });
+        return res.status(500).json({
+            message: "Error deleting user"
+        });
     }
-};
+});
 
 // List all users
-const listUsersHandler: RequestHandler = async (_req, res): Promise<void> => {
+router.get("/users", async (req: Request, res: Response) => {
     try {
         const users = await listUsers();
         const usersWithoutPasswords = users.map(({ password, ...user }) => user);
-        res.json(usersWithoutPasswords);
+        
+        return res.status(200).json({
+            message: "Users retrieved",
+            users: usersWithoutPasswords
+        });
     } catch (error) {
         console.error("Error listing users:", error);
-        res.status(500).json({ message: "Error listing users" });
+        return res.status(500).json({
+            message: "Error retrieving users"
+        });
     }
-};
-
-router.post("/register", registerHandler);
-router.get("/user/:email", getUserHandler);
-router.delete("/user/:email", deleteUserHandler); // Added DELETE route
-router.get("/users", listUsersHandler); // Added GET route for listing users
-
+});
 
 export default router;

@@ -4,7 +4,7 @@
   "description": "Group project with user management",
   "main": "dist/index.js",
   "scripts": {
-    "start": "node dist/index.js",
+    "start": "node dist/index.ts",
     "dev": "ts-node-dev --respawn src/index.ts",
     "build": "tsc",
     "test": "jest"
