@@ -58,6 +58,25 @@ router.post("/register", async (req: Request, res: Response) => {
     }
 });
 
+// List all users
+router.get("/users", async (req: Request, res: Response) => {
+    try {
+        const users = await listUsers();
+        if (!users || users.length === 0) {
+            return res.status(404).json({
+                message: "No users found"
+            });
+        }
+        const usersWithoutPasswords = users.map(({ password, ...user }) => user);
+        return res.status(200).json(usersWithoutPasswords);
+    } catch (error) {
+        console.error("Error listing users:", error);
+        return res.status(500).json({
+            message: "Error retrieving users"
+        });
+    }
+});
+
 // Get User by Email
 router.get("/user/:email", async (req: Request, res: Response) => {
     try {
@@ -66,24 +85,16 @@ router.get("/user/:email", async (req: Request, res: Response) => {
         
         if (!user) {
             return res.status(404).json({
-                success: false,
-                message: "User not found",
-                data: null
+                message: "User not found"
             });
         }
 
         const { password: _, ...userWithoutPassword } = user;
-        return res.status(200).json({
-            success: true,
-            message: "User retrieved successfully",
-            data: userWithoutPassword
-        });
+        return res.status(200).json(userWithoutPassword);
     } catch (error) {
         console.error("Error retrieving user:", error);
         return res.status(500).json({
-            success: false,
-            message: "Error retrieving user",
-            data: null
+            message: "Error retrieving user"
         });
     }
 });
@@ -91,29 +102,26 @@ router.get("/user/:email", async (req: Request, res: Response) => {
 // Get User by ID
 router.get("/:id", async (req: Request, res: Response) => {
     try {
-        const { id } = req.params;
-        const user = await findById(Number(id));
+        const id = parseInt(req.params.id);
+        if (isNaN(id)) {
+            return res.status(400).json({
+                message: "Invalid ID format"
+            });
+        }
 
+        const user = await findById(id);
         if (!user) {
             return res.status(404).json({
-                success: false,
-                message: "User not found",
-                data: null
+                message: "User not found"
             });
         }
 
         const { password: _, ...userWithoutPassword } = user;
-        return res.status(200).json({
-            success: true,
-            message: "User retrieved successfully",
-            data: userWithoutPassword
-        });
+        return res.status(200).json(userWithoutPassword);
     } catch (error) {
         console.error("Error retrieving user:", error);
         return res.status(500).json({
-            success: false,
-            message: "Error retrieving user",
-            data: null
+            message: "Error retrieving user"
         });
     }
 });
@@ -138,24 +146,6 @@ router.delete("/user/:email", async (req: Request, res: Response) => {
         console.error("Error deleting user:", error);
         return res.status(500).json({
             message: "Error deleting user"
-        });
-    }
-});
-
-// List all users
-router.get("/users", async (req: Request, res: Response) => {
-    try {
-        const users = await listUsers();
-        const usersWithoutPasswords = users.map(({ password, ...user }) => user);
-        
-        return res.status(200).json({
-            message: "Users retrieved",
-            users: usersWithoutPasswords
-        });
-    } catch (error) {
-        console.error("Error listing users:", error);
-        return res.status(500).json({
-            message: "Error retrieving users"
         });
     }
 });
