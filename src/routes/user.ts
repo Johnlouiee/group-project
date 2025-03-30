@@ -1,5 +1,5 @@
 import { Router, Request, Response } from "express";
-import { createUser, findByEmail, deleteUser, listUsers } from "../helpers/userRepository";
+import { createUser, findByEmail, deleteUser, listUsers, findById } from "../helpers/userRepository";
 
 const router = Router();
 
@@ -88,6 +88,35 @@ router.get("/user/:email", async (req: Request, res: Response) => {
     }
 });
 
+// Get User by ID
+router.get("/:id", async (req: Request, res: Response) => {
+    try {
+        const { id } = req.params;
+        const user = await findById(Number(id));
+
+        if (!user) {
+            return res.status(404).json({
+                success: false,
+                message: "User not found",
+                data: null
+            });
+        }
+
+        const { password: _, ...userWithoutPassword } = user;
+        return res.status(200).json({
+            success: true,
+            message: "User retrieved successfully",
+            data: userWithoutPassword
+        });
+    } catch (error) {
+        console.error("Error retrieving user:", error);
+        return res.status(500).json({
+            success: false,
+            message: "Error retrieving user",
+            data: null
+        });
+    }
+});
 
 // Delete User
 router.delete("/user/:email", async (req: Request, res: Response) => {
