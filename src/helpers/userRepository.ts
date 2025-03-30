@@ -24,3 +24,7 @@ export const findById = async (id: number): Promise<User | null> => {
 export const deleteUser = async (email: string): Promise<void> => {
     await userRepository.delete({ email });
 }; 
+
+export const listUsers = async (): Promise<User[]> => {
+    return await userRepository.find();
+};
