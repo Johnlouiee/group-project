@@ -1,5 +1,5 @@
 import { Router, RequestHandler } from "express";
-import { createUser, findByEmail } from "../helpers/userRepository";
+import { createUser, findByEmail, deleteUser } from "../helpers/userRepository"; // Added deleteUser import
 
 const router = Router();
 
@@ -14,23 +14,18 @@ const registerHandler: RequestHandler = async (req, res): Promise<void> => {
     try {
         const { username, email, password } = req.body as RegisterRequest;
 
-        // Validate input
         if (!username || !email || !password) {
             res.status(400).json({ message: "All fields are required" });
             return;
         }
 
-        // Check if user already exists
         const existingUser = await findByEmail(email);
         if (existingUser) {
             res.status(400).json({ message: "User with this email already exists" });
             return;
         }
 
-        // Create new user
         const user = await createUser(username, email, password);
-        
-        // Remove password from response
         const { password: _, ...userWithoutPassword } = user;
         
         res.status(201).json({ 
@@ -54,7 +49,6 @@ const getUserHandler: RequestHandler = async (req, res): Promise<void> => {
             return;
         }
 
-        // Remove password from response
         const { password: _, ...userWithoutPassword } = user;
         res.json(userWithoutPassword);
     } catch (error) {
@@ -63,7 +57,30 @@ const getUserHandler: RequestHandler = async (req, res): Promise<void> => {
     }
 };
 
+// Delete User by Email
+const deleteUserHandler: RequestHandler = async (req, res): Promise<void> => {
+    try {
+        const { email } = req.params;
+        
+        const user = await findByEmail(email);
+        if (!user) {
+            res.status(404).json({ message: "User not found" });
+            return;
+        }
+
+        await deleteUser(email);
+        res.status(200).json({ 
+            message: "User deleted successfully",
+            email: email 
+        });
+    } catch (error) {
+        console.error("Error deleting user:", error);
+        res.status(500).json({ message: "Error deleting user" });
+    }
+};
+
 router.post("/register", registerHandler);
 router.get("/user/:email", getUserHandler);
+router.delete("/user/:email", deleteUserHandler); // Added DELETE route
 
 export default router;
