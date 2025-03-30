@@ -1,33 +1,32 @@
-import express, { Express } from "express";
+import "reflect-metadata";
+import express from "express";
+import cors from "cors";
 import userRoutes from "./routes/user";
-import { DatabaseHelper } from "./helpers/database";
+import { AppDataSource } from "./helpers/database";
 
-const app: Express = express();
-const PORT = process.env.PORT || 3000;
+const app = express();
+const port = process.env.PORT || 3000;
 
 // Middleware
+app.use(cors());
 app.use(express.json());
 
 // Routes
-app.use("/api/users", userRoutes);
-
-// Error handling middleware
-app.use((err: Error, req: express.Request, res: express.Response, next: express.NextFunction) => {
-    console.error(err.stack);
-    res.status(500).json({ error: 'Something went wrong!' });
-});
+app.use("/api", userRoutes);
 
 // Initialize database and start server
-async function startServer() {
+const startServer = async () => {
     try {
-        await DatabaseHelper.initialize();
-        app.listen(PORT, () => {
-            console.log(`Server is running on port ${PORT}`);
+        await AppDataSource.initialize();
+        console.log("✅ Database Connected!");
+
+        app.listen(port, () => {
+            console.log(`🚀 Server running on http://localhost:${port}`);
         });
     } catch (error) {
-        console.error('Failed to start server:', error);
+        console.error("❌ Error starting server:", error);
         process.exit(1);
     }
-}
+};
 
 startServer();
