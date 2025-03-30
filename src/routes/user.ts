@@ -1,5 +1,5 @@
 import { Router, RequestHandler } from "express";
-import { createUser, findByEmail, deleteUser } from "../helpers/userRepository"; // Added deleteUser import
+import { createUser, findByEmail, deleteUser, listUsers} from "../helpers/userRepository"; // Added deleteUser import
 
 const router = Router();
 
@@ -79,8 +79,22 @@ const deleteUserHandler: RequestHandler = async (req, res): Promise<void> => {
     }
 };
 
+// List all users
+const listUsersHandler: RequestHandler = async (_req, res): Promise<void> => {
+    try {
+        const users = await listUsers();
+        const usersWithoutPasswords = users.map(({ password, ...user }) => user);
+        res.json(usersWithoutPasswords);
+    } catch (error) {
+        console.error("Error listing users:", error);
+        res.status(500).json({ message: "Error listing users" });
+    }
+};
+
 router.post("/register", registerHandler);
 router.get("/user/:email", getUserHandler);
 router.delete("/user/:email", deleteUserHandler); // Added DELETE route
+router.get("/users", listUsersHandler); // Added GET route for listing users
+
 
 export default router;
