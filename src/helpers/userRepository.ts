@@ -19,4 +19,8 @@ export const findByEmail = async (email: string): Promise<User | null> => {
 
 export const findById = async (id: number): Promise<User | null> => {
     return await userRepository.findOne({ where: { id } });
+};
+
+export const deleteUser = async (email: string): Promise<void> => {
+    await userRepository.delete({ email });
 }; 
